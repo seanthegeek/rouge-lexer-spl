@@ -40,6 +40,13 @@ Add the gem to your site's `Gemfile`:
 gem 'rouge-lexer-spl'
 ```
 
+To by used with Jekyll, the gem must be added to the gems inside the `:jekyll_plugins` group:
+
+```ruby
+group :jekyll_plugins do
+  gem "rouge-lexer-spl"
+end
+
 Run `bundle install`, then use ` ```spl ` fences in your posts and pages. Jekyll will pick up the lexer automatically via Rouge's plugin discovery.
 
 ## Development
@@ -79,9 +86,11 @@ DEBUG=1 ruby preview.rb
 1. Run `bundle exec rake` to check for test failures and error tokens.
 2. Start the server with `bundle exec rake server`.
 3. In another terminal, check for error tokens in the rendered output:
+
    ```sh
    curl -s http://localhost:9292 | grep 'class="err"'
    ```
+
 4. Fix any error tokens in `lib/rouge/lexers/spl.rb`.
 5. Repeat until no error tokens remain.
 
