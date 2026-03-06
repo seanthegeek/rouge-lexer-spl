@@ -34,18 +34,13 @@ index=web sourcetype=access_combined | stats count by status
 
 ## Jekyll / GitHub Pages
 
-Add the gem to your site's `Gemfile`:
-
-```ruby
-gem 'rouge-lexer-spl'
-```
-
-To by used with Jekyll, the gem must be added to the gems inside the `:jekyll_plugins` group:
+Add the gem to your site's `Gemfile` inside the `:jekyll_plugins` group:
 
 ```ruby
 group :jekyll_plugins do
   gem "rouge-lexer-spl"
 end
+```
 
 Run `bundle install`, then use ` ```spl ` fences in your posts and pages. Jekyll will pick up the lexer automatically via Rouge's plugin discovery.
 
