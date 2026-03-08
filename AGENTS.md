@@ -5,7 +5,7 @@ This file provides guidance to AI agents when working with code in this reposito
 ## Commands
 
 ```sh
-bundle install          # Install dependencies
+bundle config set --local path vendor/bundle && bundle install  # Install dependencies (use local path — system gems are not writable)
 bundle exec rake        # Run the test suite (default task)
 bundle exec rake server # Start visual preview server at http://localhost:9292
 ruby preview.rb         # Terminal preview using Github theme
@@ -48,7 +48,9 @@ Use *ONLY* official Splunk documentation, *NOT* from memory, training or, infere
 
 ### Splunk documentation
 
-Read *every one* of the documentation pages below to understand *ALL*  Splunk commands and other SPL build a lexer that is comprehensive and feature complete.
+**MANDATORY: Before writing or modifying the lexer, you MUST fetch and read every URL in this list.** This is not background reading — it is a required prerequisite step. Fetch each page, extract the function or command names, and verify them against the lexer before declaring any work complete.
+
+Do not use the quick-reference or overview pages as a substitute for the individual detail pages. The quick-reference pages omit aliases (e.g. `ceil` for `ceiling`, `average` for `avg`, `c` for `count`), secondary functions, and command-specific keywords that only appear on the detail pages. Every page in this list exists because it contains information not fully captured elsewhere.
 
 - Understanding SPL syntax <https://docs.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/introduction/understanding-spl-syntax>
 - How to use this manual <https://docs.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/introduction/how-to-use-this-manual>
@@ -282,7 +284,9 @@ print(text[idx:idx+8000])
 
 ## Verification workflow (MANDATORY — do this BEFORE adding anything)
 
-Before adding ANY keyword, function, or syntax element to the lexer:
+Before writing or modifying the lexer, fetch **every URL in the Splunk documentation list** above. Do not begin implementation until all pages have been read. "I read the quick-reference page" is not sufficient.
+
+Before adding ANY individual keyword, function, or syntax element:
 
 1. **Fetch the relevant documentation page** using the WebFetch tool or curl (see Fetching documentation above).
 2. **Extract and confirm** the element exists in the fetched content. Do not rely on training data, memory, or assumptions about what "should" exist.
@@ -305,3 +309,28 @@ After making changes, verify correctness by **re-fetching the source documentati
 - **Follow Rouge conventions exactly.** Study existing lexers (especially JSON and SQL) for patterns. Don't invent novel approaches.
 - **The Error token count is the ground truth.** The visual preview server is the authoritative test. `bundle exec rake` passing is necessary but not sufficient — you must also have zero `class="err"` spans.
 - **Iterate until clean.** Do not declare the task complete until both `bundle exec rake` passes AND the Error token count is zero for both demo and visual sample.
+- **Update the visual sample** (`spec/visual/samples/spl`) whenever new tokens are added to the lexer, so every token type has coverage.
+
+## SPL lexer gotchas
+
+These mistakes are easy to make and will cause error tokens or incorrect highlighting.
+
+### Characters that need explicit lexer rules
+
+The following characters appear in real SPL but are not word characters (`\w`) and have no obvious operator meaning, so they produce error tokens if no rule matches them:
+
+| Character | Where it appears | Rule needed |
+| --------- | ---------------- | ----------- |
+| `@` | Time snap modifier: `-24h@h`, `@d`, `@w0` | `Operator` |
+| `:` | Field values with colons: `sourcetype=cisco:asa` | `Punctuation` |
+| `{}` | spath array paths: `results{}`, `data{0}` | `Punctuation` |
+| `$word$` | Macro argument substitution: `$host$` | `Name::Variable` |
+| `$` | Standalone (e.g. `return $threshold`) | `Operator` |
+
+### The dot operator and IP addresses
+
+Do **not** write `rule %r/\.(?!\w)/` for the dot operator. The negative lookahead `(?!\w)` prevents it from matching dots before digits, so IP addresses like `10.0.0.*` produce error tokens on every `.`. Use a plain `rule %r/\./` instead.
+
+### Documentation placeholders are not syntax
+
+Splunk documentation uses `<<UPPERCASE>>` patterns (e.g. `<<field-name>>`, `<<search-string>>`) and `<lowercase>` angle-bracket patterns to indicate where the user should substitute their own values. **None of these are real SPL syntax.** Do not add lexer rules for them and do not include them in the visual sample.

@@ -17,7 +17,8 @@ module Rouge
       end
 
       # SPL commands
-      # Source: https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/quick-reference/command-quick-reference
+      # Sources: https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/quick-reference/command-quick-reference
+      #          https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/quick-reference/command-types
       def self.commands
         @commands ||= Set.new %w(
           abstract accum addcoltotals addinfo addtotals analyzefields
@@ -33,7 +34,7 @@ module Rouge
           join kmeans kvform loadjob localize localop lookup makecontinuous
           makemv makeresults map mcollect metadata metasearch meventcollect
           mpreview msearch mstats multikv multisearch mvcombine mvexpand
-          nomv outlier outputcsv outputlookup outputtext overlap pivot
+          nomv noop outlier outputcsv outputlookup outputtext overlap pivot
           predict rangemap rare redistribute regex reltime rename replace
           require rest return reverse rex rtorder run savedsearch script
           scrub search searchtxn selfjoin sendalert sendemail set setfields
@@ -60,23 +61,25 @@ module Rouge
       #   Statistical:    https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/evaluation-functions/statistical-eval-functions
       #   Text:           https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/evaluation-functions/text-functions
       #   Trig:           https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/evaluation-functions/trig-and-hyperbolic-functions
+      #   Convert cmd:    https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/search-commands/convert
       def self.eval_functions
         @eval_functions ||= Set.new %w(
           abs acos acosh asin asinh atan atan2 atanh avg
           bit_and bit_not bit_or bit_shift_left bit_shift_right bit_xor
-          case ceiling cidrmatch coalesce commands cos cosh
+          case ceil ceiling cidrmatch coalesce commands cos cosh
+          ctime dur2sec
           exact exp false floor hypot if ipmask
           isarray isbool isdouble isint ismv isnotnull isnull isnum isobject isstr
           json json_append json_array json_array_to_mv json_delete json_entries
           json_extend json_extract json_extract_exact json_has_key_exact
           json_keys json_object json_set json_set_exact json_valid
-          len like ln log lower ltrim match max md5 min
+          len like ln log lower ltrim match max md5 memk min mktime mstime
           mv_to_json_array mvappend mvcount mvdedup mvfilter mvfind mvindex
-          mvjoin mvmap mvrange mvsort mvzip
-          now null nullif pi pow printf random relative_time replace round
-          rtrim searchmatch sha1 sha256 sha512 sigfig sin sinh split sqrt
-          spath strftime strptime substr sum tan tanh time toarray tobool
-          todouble toint tomv tonumber toobject tostring trim true typeof
+          mvjoin mvmap mvrange mvreverse mvsort mvzip
+          now null nullif pi pow printf random relative_time replace rmcomma
+          rmunit round rtrim searchmatch sha1 sha256 sha512 sigfig sin sinh
+          split sqrt spath strftime strptime substr sum tan tanh time toarray
+          tobool todouble toint tomv tonumber toobject tostring trim true typeof
           upper urldecode validate
         )
       end
@@ -89,10 +92,11 @@ module Rouge
       #   Time:        https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/statistical-and-charting-functions/time-functions
       def self.stats_functions
         @stats_functions ||= Set.new %w(
-          avg c count dc distinct_count earliest earliest_time estdc estdc_error
-          first last latest latest_time list max mean median min mode
-          per_day per_hour per_minute per_second range rate rate_avg rate_sum
-          stdev stdevp sum sumsq upperperc values var varp
+          avg average c count dc distinct_count earliest earliest_time
+          estdc estdc_error first last latest latest_time list max mean
+          median min mode per_day per_hour per_minute per_second range rate
+          rate_avg rate_sum sparkline stdev stdevp sum sumsq upperperc
+          values var varp
         )
       end
 
@@ -114,12 +118,15 @@ module Rouge
       end
 
       # Built-in and internal fields
+      # Sources: Splunk internal metadata fields;
+      #          https://help.splunk.com/en/splunk-enterprise/search/spl-search-reference/10.2/search-commands/addinfo
       def self.builtin_fields
         @builtin_fields ||= Set.new %w(
           _bkt _cd _indextime _kv _raw _serial _si _sourcetype _subsecond _time
           date_hour date_mday date_minute date_month date_second date_wday
-          date_year date_zone eventtype host index linecount punct source
-          sourcetype splunk_server tag timeendpos timestartpos
+          date_year date_zone eventtype host index info_max_time info_min_time
+          info_search_time info_sid linecount punct source sourcetype
+          splunk_server tag timeendpos timestartpos
         )
       end
 
@@ -175,8 +182,10 @@ module Rouge
         # Wildcard
         rule %r/\*/, Operator
 
-        # Percentile functions with numeric suffix: perc90, p95, exactperc99, upperperc90
-        rule %r/(?:exactperc|upperperc|perc|p)\d+\b/, Name::Builtin
+        # Functions with required numeric suffix:
+        #   Percentile:  perc90, p95, exactperc99, upperperc90
+        #   Trendline:   sma5, ema10, wma20 (Source: https://help.splunk.com/.../search-commands/trendline)
+        rule %r/(?:exactperc|upperperc|perc|sma|ema|wma|p)\d+\b/, Name::Builtin
 
         # Words — classify by set membership
         rule %r/\w+/ do |m|

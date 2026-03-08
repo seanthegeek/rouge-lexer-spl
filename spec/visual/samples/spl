@@ -96,9 +96,13 @@ index=main earliest=-30m latest=now
 
 | eval rand_num=random()
 
+| eval rounded_up=ceil(3.2)
+| eval reversed=mvreverse(myfield)
+
 index=main sourcetype=access_combined
 | stats count AS total_requests,
     avg(response_time) AS avg_response,
+    average(response_time) AS avg_response2,
     max(response_time) AS max_response,
     min(response_time) AS min_response,
     dc(clientip) AS unique_clients,
@@ -114,7 +118,8 @@ index=main sourcetype=access_combined
     values(method) AS methods,
     earliest(_time) AS first_seen,
     latest(_time) AS last_seen,
-    perc95(response_time) AS p95
+    perc95(response_time) AS p95,
+    sparkline count
   BY host, sourcetype
 
 index=main
@@ -175,7 +180,8 @@ index=main sourcetype=access_combined
 | where status IN (200, 301, 404, 500)
 
 | convert timeformat="%Y-%m-%d" ctime(_time) AS event_date
-| convert rmunit(percent_cpu)
+| convert rmunit(percent_cpu) dur2sec(response_duration) rmcomma(revenue)
+| convert memk(memory_used) mstime(elapsed_time) mktime(event_date_str) AS epoch
 
 status!=200 AND (method="POST" OR method="PUT") NOT url="*/health*"
 
@@ -194,13 +200,18 @@ true false TRUE FALSE null NULL
 
 _time _raw host source sourcetype index
 
+| addinfo
+_time info_min_time info_max_time info_sid info_search_time
+
 | transaction host maxspan=5m maxpause=30s
 | iplocation clientip
 | geostats latfield=lat longfield=lon count BY status
 
 | predict response_time AS predicted_response future_timespan=24
-| trendline sma5(response_time) AS trend
+| trendline sma5(response_time) AS sma_trend ema10(response_time) AS ema_trend wma20(response_time) AS wma_trend
 | anomalydetection field=response_time
+
+| noop
 
 | makeresults count=10
 | eval random_val=random() % 100
@@ -219,7 +230,7 @@ index=main
 | makemv delim="," values
 | mvexpand values
 
-| foreach * [eval <<FIELD>>=if(isnull(<<FIELD>>), 0, <<FIELD>>)]
+| foreach bytes_* [eval total=total+bytes_out]
 | eval result=printf("%s has %d errors (%.2f%%)", host, count, pct)
 | strcat source ":" sourcetype full_source
 
