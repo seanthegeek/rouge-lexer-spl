@@ -9,14 +9,16 @@ Gem::Specification.new do |s|
   s.authors     = ['Sean Whalen']
   s.homepage    = 'https://github.com/seanthegeek/rouge-lexer-spl'
   s.license     = 'MIT'
-  s.files       = Dir['lib/**/*.rb'] + Dir['spec/demos/*'] + Dir['spec/visual/samples/*']
+  s.files       = Dir['lib/**/*.rb'] + Dir['spec/demos/*'] + Dir['spec/visual/samples/*'] + ['README.md']
 
   s.required_ruby_version = '>= 3.0'
 
   s.add_dependency 'rouge', '>= 3.0'
 
   s.metadata = {
-    'source_code_uri' => 'https://github.com/seanthegeek/rouge-lexer-spl',
-    'bug_tracker_uri' => 'https://github.com/seanthegeek/rouge-lexer-spl/issues'
+    'source_code_uri'  => 'https://github.com/seanthegeek/rouge-lexer-spl',
+    'bug_tracker_uri'  => 'https://github.com/seanthegeek/rouge-lexer-spl/issues',
+    'changelog_uri'    => 'https://github.com/seanthegeek/rouge-lexer-spl/blob/main/CHANGELOG.md',
+    'documentation_uri' => 'https://github.com/seanthegeek/rouge-lexer-spl/blob/main/README.md'
   }
 end
