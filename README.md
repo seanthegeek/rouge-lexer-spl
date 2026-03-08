@@ -12,7 +12,7 @@ gem install rouge-lexer-spl
 
 Or add it to your `Gemfile`:
 
-```ruby
+```sh
 gem 'rouge-lexer-spl'
 ```
 
