@@ -311,6 +311,17 @@ After making changes, verify correctness by **re-fetching the source documentati
 - **Iterate until clean.** Do not declare the task complete until both `bundle exec rake` passes AND the Error token count is zero for both demo and visual sample.
 - **Update the visual sample** (`spec/visual/samples/spl`) whenever new tokens are added to the lexer, so every token type has coverage.
 
+## Changelog
+
+The changelog ([CHANGELOG.md](CHANGELOG.md)) follows the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format and [Semantic Versioning](https://semver.org/spec/v2.0.0.html). When updating the changelog:
+
+- Use `## [version] - YYYY-MM-DD` for release headings
+- Use `### Added`, `### Changed`, `### Removed` as second-level section headings
+- Use `#### Category name` as third-level headings within a section (e.g. `#### Commands`, `#### Evaluation functions`)
+- Ensure blank lines surround all headings to satisfy markdownlint
+
+The markdownlint configuration in [.vscode/settings.json](.vscode/settings.json) sets `MD024` to `siblings_only: true`, allowing repeated heading text under different parent headings (e.g. `### Added` appearing under multiple version sections).
+
 ## SPL lexer gotchas
 
 These mistakes are easy to make and will cause error tokens or incorrect highlighting.
